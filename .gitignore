@@ -1,0 +1,8 @@
+.env
+db.sqlite3
+__pycache__
+bet/__pycache__/
+bet/migrations/
+wallet/__pycache__/
+wallet/migrations/
+bongobet/__pycache__/
