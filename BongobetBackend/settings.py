@@ -47,11 +47,11 @@ CELERYD_LOG_LEVEL = 'INFO'
 CELERY_BEAT_SCHEDULE = {
     'check_bets': {
         'task': 'BongobetBackend.tasks.check_and_validate_bets',
-        'schedule': 30.0, 
+        'schedule': 45.0, 
     },
     'check-twitch-online-task': {
         'task': 'BongobetBackend.tasks.check_famous_players_online_twitch',
-        'schedule': 30.0, 
+        'schedule': 90.0, 
     },
 }
 
