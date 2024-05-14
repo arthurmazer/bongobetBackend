@@ -32,6 +32,8 @@ ALLOWED_HOSTS = [
 ]
 
 RIOT_API_KEY = config('RIOT_API_KEY')
+TWITCH_CLIENT_ID_KEY = config('TWITCH_CLIENT_ID')
+TWITCH_SECRET_KEY = config('TWITCH_SECRET_KEY')
 
 
 # Application definition
@@ -43,9 +45,13 @@ CELERYD_LOG_LEVEL = 'INFO'
 
 # Configurações do Celery Beat
 CELERY_BEAT_SCHEDULE = {
-    'minha-tarefa-agendada': {
-        'task': 'BongobetBackend.tasks.minha_tarefa',
-        'schedule': 10.0,  # Executa a cada 10 segundos, por exemplo
+    'check_bets': {
+        'task': 'BongobetBackend.tasks.check_and_validate_bets',
+        'schedule': 30.0, 
+    },
+    'check-twitch-online-task': {
+        'task': 'BongobetBackend.tasks.check_famous_players_online_twitch',
+        'schedule': 30.0, 
     },
 }
 

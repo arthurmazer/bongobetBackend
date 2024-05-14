@@ -1,16 +1,15 @@
-from celery import shared_task
 import logging
 from .celery import app
-from bet.models import Bet, StatusBet, GameType, BetLol, BetType
-from leagueoflegends.utils import get_last_matches_id, get_match_by_id, map_response_match_history
-from wallet.utils import refund_bet_value_wallet, add_to_wallet_loss_bet, add_to_wallet_win_bet
-from datetime import datetime, timedelta
+from bet.models import Bet, BetLol
+from leagueoflegends.utils import map_response_match_history, check_lol_streaming_now, get_live_match, insert_player_online, get_user__summoners_rift_rank_stats, get_user_by_puuid, get_streamer_details
+from leagueoflegends.models import FamousTwitchPlayersLol, PlayersOnline
+from .utils import check_next_game, check_match_queue, check_bet_expirada, set_refund, set_bet_winner, set_bet_loser, check_win_condition
 
 logger = logging.getLogger(__name__)
 
 @app.task
-def minha_tarefa():
-    print("--------------- ################## ------------- CHECANDO PARTIDAS ------------ ################## ---------------")
+def check_and_validate_bets():
+    print("--------------- ################## ------------- CHECANDO BETS ------------ ################## ---------------")
     
     bets = Bet.objects.filter(betlol__statusBet=0).order_by('-date')
 
@@ -49,108 +48,82 @@ def minha_tarefa():
                 else:
                     print("Jogo não encontrado - Partida ainda não ocorreu")
 
-def set_bet_winner(bet, betlol):
-    print("BET WIN")
-    add_to_wallet_win_bet(bet.userEmail, betlol.quantity, betlol.quantity * betlol.odds)
-    betlol.statusBet = StatusBet.VITORIA.value
-    betlol.save()         
+@app.task
+def check_famous_players_online_twitch():
+    print("--------------- ################## ------------- CHECANDO TWITCH ONLINE PLAYERS------------ ################## ---------------")
+    lolStreamers = FamousTwitchPlayersLol.objects.all()
 
-def set_bet_loser(bet, betlol):
-    print("Derrota")
-    add_to_wallet_loss_bet(bet.userEmail, betlol.quantity)
-    betlol.statusBet = StatusBet.DERROTA.value
-    betlol.save()
+    for lol_streamer in lolStreamers:
+        print(lol_streamer)
+        channel_id = lol_streamer.channelId
+        region = lol_streamer.region
+        puuid = lol_streamer.puuid
 
-def set_refund(bet, betlol):
-    print("Refund")
-    refund_bet_value_wallet(bet.userEmail, betlol.quantity)
-    betlol.statusBet = StatusBet.REEMBOLSADO.value
-    betlol.save()
+        streamer_online = check_lol_streaming_now(channel_id)
 
-def check_win_condition(match, betType):
-    if betType == "win":
-        print("Win Confirmed")
-        return True
-    elif betType == "baron2":
-        if match[0]["teamBaronKills"] >= 2:
-            print("Baron2 Confirmed")
-            return True
-        return False
-    elif betType == "firstblood":
-        if match[0]["firstBloodKill"]:
-            print("Firstblood Confirmed")
-            return True
-        return False
-    elif betType == "double3":
-        if match[0]["doubleKills"] >= 3:
-            print("Double3 Confirmed")
-            return True
-        return False
-    elif betType == "clashchampion":
-        return False
-    elif betType == "aphelios":
-        if match[0]["championId"] == 523:
-            print("Aphelios Confirmed")
-            return True
-        return False
-    elif betType == "singed":
-        if match[0]["championId"] == 27:
-            return True
-        return False
-    elif betType == "imortal":
-        if match[0]["deaths"] == 0:
-            print("Imortal Confirmed")
-            return True
-        return False
-    elif betType == "ggezsr":
-        if match[0]["duration"] <= 1200:
-            print("GGEZSR Confirmed")
-            return True
-        return False
-    elif betType == "ggezaram":
-        if match[0]["duration"] <= 1200:
-            print("GGEZARAM Confirmed")
-            return True
-        return False
-            
-def check_match_queue(match, bet_game_type):
-    queueId = match['info']['queueId']
-    if queueId == bet_game_type:
-        return True
-    else:
-        return False
+        if streamer_online and streamer_online.get('data').__len__() > 0:
 
+            streamer_profile = get_streamer_details(channel_id)
 
-def check_bet_expirada(bet_date):
-    # Data fornecida
-    data_fornecida = datetime.strptime(str(bet_date), "%Y-%m-%d %H:%M:%S.%f%z")
+            streamer_data = streamer_online.get('data')
 
-    # Remover informação de fuso horário (tornar offset-naive)
-    data_fornecida = data_fornecida.replace(tzinfo=None)
-    data_atual = datetime.now()
-    data_ha_duas_horas = data_atual - timedelta(hours=2)
-    if data_fornecida < data_ha_duas_horas:
-        print("A data fornecida foi há mais de duas horas atrás. BET EXPIRADA")
-        return True
-    else:
-        print("A data fornecida não foi há mais de duas horas atrás. Bet valida")
-        return False
+            if streamer_data.__len__() > 0 and streamer_data[0].get('type') == 'live' and streamer_data[0].get('game_id') == "21779":
 
+                current_match = get_live_match(puuid)
+                print(current_match)
+                if current_match:
+                    #rint("Streamer online e jogando Lolzinho do Povo Brasileiro")
+                    lolUser = get_user_by_puuid(puuid)
 
-def check_next_game(puuid, idUltimoJogo):
-    last_match = get_last_matches_id(puuid, 10)
-    indice = last_match.index(idUltimoJogo)
+                    streamer_rank = get_user__summoners_rift_rank_stats(lolUser['id'])
 
-    if indice > 0:
-        
-        for i in range(indice-1, -1 , -1):
-            partida_bet = last_match[i]
-            match = get_match_by_id(partida_bet)
+                    # Filtra os objetos com 'queueType' igual a 'RANKED_SOLO_5x5'
+                    ranked_solo_queue_stats = list(filter(lambda item: item["queueType"] == "RANKED_SOLO_5x5", streamer_rank))
 
-            #checa remake
-            if match['info']['gameDuration'] > 420:
-                return match
-        return None
-    else:
-        print("O elemento especificado é o primeiro da lista. Não há elemento anterior.")
-        return None        
+                    #Pega o Rank da SoloQ ou FlexQ
+                    if ranked_solo_queue_stats.__len__() > 0:
+
+                        insert_player_online(
+                            lol_streamer.id, 
+                            ranked_solo_queue_stats[0].get('rank'),
+                            ranked_solo_queue_stats[0].get('tier'),
+                            ranked_solo_queue_stats[0].get('leaguePoints'),
+                            streamer_profile.get('data')[0].get('profile_image_url'),
+                            streamer_data[0].get('started_at')
+                            )
+                    else:
+                        ranked_flex_queue_stats = list(filter(lambda item: item["queueType"] == "RANKED_FLEX_SR", streamer_rank))
+                        if ranked_flex_queue_stats.__len__() > 0:
+                            insert_player_online(
+                                lol_streamer.id, 
+                                ranked_flex_queue_stats[0].get('rank'),
+                                ranked_flex_queue_stats[0].get('tier'),
+                                ranked_flex_queue_stats[0].get('leaguePoints'),
+                                streamer_profile.get('data')[0].get('profile_image_url'),
+                                streamer_data[0].get('started_at')
+                            )
+                        else:
+                            #Streamer sem rank no LoL
+                            insert_player_online(
+                                lol_streamer.id, 
+                                "Unranked",
+                                "",
+                                0,
+                                streamer_profile.get('data')[0].get('profile_image_url'),
+                                streamer_data[0].get('started_at')
+                            )
+                else:
+                    #"Streamer online mas não jogando"
+                    try:
+                        player_online = PlayersOnline.objects.get(id=lol_streamer.id)
+                        player_online.delete()
+                        print("Registro removido com sucesso!")
+                    except PlayersOnline.DoesNotExist:
+                        print("O registro não foi encontrado.")
+        else:
+            try:
+                player_online = PlayersOnline.objects.get(id=lol_streamer.id)
+                player_online.delete()
+                print("Registro removido com sucesso!")
+            except PlayersOnline.DoesNotExist:
+                print("O registro não foi encontrado.")

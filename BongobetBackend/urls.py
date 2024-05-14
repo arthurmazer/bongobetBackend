@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from bet.views import GamesBetTypeAPIView, BetTypeAPIView, BetApiView, BetHistoryApiView
-from leagueoflegends.views import LolSummonerDataAPIView, LolMatchHistoryAPIView, LiveMatchApiView, RiotAccoutAPIView
+from leagueoflegends.views import LolSummonerDataAPIView, LolMatchHistoryAPIView, LiveMatchApiView, RiotAccoutAPIView, TwitchStreamerOnlineAPIView
 from django.urls import include
 from wallet.views import WalletAPIView
 
@@ -32,6 +32,7 @@ urlpatterns = [
     path('api/get_riot_account/', RiotAccoutAPIView.as_view(), name='get_riot_account'),
     path('api/create_bet/', BetApiView.as_view(), name='create_bet'),
     path('api/get_wallet/', WalletAPIView.as_view(), name='get_wallet'),
-    path('api/get_bet_history/', BetHistoryApiView.as_view(), name='get_bet_history')
+    path('api/get_bet_history/', BetHistoryApiView.as_view(), name='get_bet_history'),
+    path('api/check_streamer_online/', TwitchStreamerOnlineAPIView.as_view(), name='check_streamer_online'),
     
 ]

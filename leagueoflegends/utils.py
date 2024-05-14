@@ -1,13 +1,18 @@
 import requests
 from django.conf import settings
+from .models import PlayersOnline
 from datetime import datetime
 
 RIOT_API_KEY = settings.RIOT_API_KEY
+TWITCH_CLIENT_ID = settings.TWITCH_CLIENT_ID_KEY
+TWITCH_SECRET = settings.TWITCH_SECRET_KEY
 RIOT_API_AMERICAS_URL = 'https://americas.api.riotgames.com/'
 RIOT_API_BR_URL = 'https://br1.api.riotgames.com/lol'
 RIOT_API_BR_TFT_URL = 'https://br1.api.riotgames.com/tft'
 headers = {'X-Riot-Token': RIOT_API_KEY}
 RIOT_API_BR_REGION = 'BR1'
+
+TWITCH_API_BASE_URL = 'https://api.twitch.tv/helix'
 
 DEFAULT_MAX_PARTIDAS_HISTORICO = 5
 
@@ -17,8 +22,7 @@ def get_user_by_summoner_name_tagline(summoner_name, tag):
     endpoint = f'{RIOT_API_AMERICAS_URL}riot/account/v1/accounts/by-riot-id/{summoner_name}/{tag}'
     headers = {'X-Riot-Token': RIOT_API_KEY}
     response = requests.get(endpoint, headers=headers)
-    print(endpoint)
-    print(response)
+
     if response.status_code == 200:
         userLolAccount = response.json()
         return userLolAccount
@@ -105,17 +109,6 @@ def get_match_by_id(id):
     
     return None
 
-def get_rank_stats(id):
-    endpoint = f'{RIOT_API_BR_URL}/league/v4/entries/by-summoner/{id}'
-    headers = {'X-Riot-Token': RIOT_API_KEY}
-    response = requests.get(endpoint, headers=headers)
-
-    if response.status_code == 200:
-        rankProfile = response.json()
-        return rankProfile
-    
-    return None
-
 def get_queue_json():
     urlJson = "https://static.developer.riotgames.com/docs/lol/queues.json"
     response = requests.get(urlJson)
@@ -154,6 +147,43 @@ def get_champions_json():
     return None
 
 ################ END API RIOT ######################
+
+################ TWITCH API ######################
+
+
+def check_lol_streaming_now(channel_id):
+    endpoint = f'{TWITCH_API_BASE_URL}/streams?user_login={channel_id}'
+    headers = {'Client-ID': TWITCH_CLIENT_ID, 'Authorization': f'Bearer {TWITCH_SECRET}'}
+    response = requests.get(endpoint, headers=headers)
+
+    if response.status_code == 200:
+        streamerDetails = response.json()
+        return streamerDetails
+    
+    return None
+
+def get_streamer_details(channel_id):
+    endpoint = f'{TWITCH_API_BASE_URL}/users?login={channel_id}'
+    headers = {'Client-ID': TWITCH_CLIENT_ID, 'Authorization': f'Bearer {TWITCH_SECRET}'}
+    response = requests.get(endpoint, headers=headers)
+
+    if response.status_code == 200:
+        streamerDetails = response.json()
+        return streamerDetails
+    
+    return None
+
+def insert_player_online(famous_twitch_player_id, rank, tier, pdl, thumb_url, started_at):
+    player_online, created = PlayersOnline.objects.get_or_create(
+    famousTwitchPlayersLol_id=famous_twitch_player_id,
+    defaults={
+        'rank': rank,
+        'tier': tier,
+        'pdl': pdl,
+        'thumbUrl': thumb_url,
+        'started_at': started_at
+    }
+)
 
 ################ RESPONSE MAPS & UTILS ##############################
 

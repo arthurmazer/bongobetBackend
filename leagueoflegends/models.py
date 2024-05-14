@@ -1,28 +1,22 @@
 from django.db import models
 
 
-#Usado para armazenar dados do usuário do lol vindo da API para fins de cache
-class LolUser(models.Model):
-    lolUserid = models.TextField()
-    puuid = models.TextField()
-    summonerName = models.TextField()
-    accountId = models.TextField(default="")
-    profileIconUrl = models.TextField(default="")
-    summonerLevel = models.IntegerField(default=0)
-    updated_at = models.DateTimeField(auto_now_add=True)
-    tierRankedSolo = models.TextField(default="", null=True)
-    tierRankedFlex = models.TextField(default="", null=True )
-    rankRankedSolo = models.TextField(default="", null=True)
-    rankRankedFlex = models.TextField(default="", null=True)
-    pdlRankedSolo = models.IntegerField(default=0, null=True)
-    pdlRankedFlex = models.IntegerField(default=0, null=True)
-    winsSolo = models.IntegerField(default=0, null=True)
-    lossesSolo = models.IntegerField(default=0, null=True)
-    winsFlex = models.IntegerField(default=0, null=True)
-    lossesFlex = models.IntegerField(default=0, null=True)
-    tierTFT = models.TextField(default="", null=True)
-    rankTFT = models.TextField(default="", null=True)
-    pdlTFT = models.IntegerField(default=0, null=True)
-    winsTFT = models.IntegerField(default=0, null=True)
-    lossesTFT = models.IntegerField(default=0, null=True)
+class FamousTwitchPlayersLol(models.Model):
+    name = models.CharField(max_length=400)
+    puuid = models.CharField(max_length=1000)
+    channelId = models.CharField(max_length=500)
+    region = models.CharField(max_length=100, default="BR")
 
+    def __str__(self):
+        return f"{self.name}  {self.region}"
+    
+class PlayersOnline(models.Model):
+    famousTwitchPlayersLol = models.ForeignKey(FamousTwitchPlayersLol, on_delete=models.CASCADE, related_name="famousTwitchPlayersLol") 
+    rank = models.CharField(max_length=400)
+    tier = models.CharField(max_length=100)
+    pdl = models.IntegerField(default=0)
+    thumbUrl = models.CharField(max_length=1400)
+    started_at = models.DateTimeField()
+
+    def __str__(self):
+        return f"{self.famousTwitchPlayersLol.name}  {self.rank}"

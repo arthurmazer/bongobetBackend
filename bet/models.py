@@ -1,7 +1,6 @@
 from django.db import models
 from enum import Enum
 from django.contrib.auth.models import User
-from leagueoflegends.models import LolUser
 
 #Status da Aposta
 class StatusBet(Enum):

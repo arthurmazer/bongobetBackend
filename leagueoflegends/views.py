@@ -13,8 +13,8 @@ from .utils import get_user_tft_rank_stats
 from .utils import map_response_match_history
 from .utils import map_response_live_match
 from .utils import get_match_history_api
+from leagueoflegends.models import FamousTwitchPlayersLol, PlayersOnline
 from .utils import RIOT_API_BR_REGION
-from bet.models import GameType, BetType, Bet, BetLol
 import os
 
 
@@ -24,7 +24,7 @@ class RiotAccoutAPIView(APIView):
             summoner_name = request.query_params.get('summoner_name')
             tag = request.query_params.get('tag')
             lolAccount = get_user_by_summoner_name_tagline(summoner_name, tag)
-            print(lolAccount)
+
             if lolAccount:
                 return Response(lolAccount, status=status.HTTP_200_OK)
             else:
@@ -49,11 +49,10 @@ class LolSummonerDataAPIView(APIView):
                 lolLastVersion = obter_primeira_versao_ddragon()
                 urlProfileImg = 'https://ddragon.leagueoflegends.com/cdn/' + str(lolLastVersion) + '/img/profileicon/' + str(lolUser['profileIconId']) + '.png'
 
-                print(":d")
-                print(userSummonersRiftRank)
+
                 for result in userSummonersRiftRank:
                     if 'queueType' in result and result['queueType'] == 'RANKED_SOLO_5x5':
-                        print("entro1")
+
                         rankSummonersResponseData.append({
                             'queueType': 'Ranked Solo/Duo',
                             'tier': str(result.get('tier')),
@@ -64,7 +63,7 @@ class LolSummonerDataAPIView(APIView):
                             'iconRankSolo': str(result.get('tier')).lower() + '.png',
                         })
                     elif 'queueType' in result and result['queueType'] == 'RANKED_FLEX_SR':
-                        print("entro3")
+
                         rankSummonersResponseData.append({
                             'queueType': 'Ranked Flex',
                             'tier': str(result.get('tier')),
@@ -156,13 +155,8 @@ class LolMatchHistoryAPIView(APIView):
                 else:
                     quantMatches = 6               
 
-                print("entro")
                 match_history = get_match_history_api(puuid, quantMatches)
-                print(match_history)
-                print("toma")
                 matchHistoryResponse = map_response_match_history(puuid, match_history)
-                print("zedume?")
-
 
                 live_match = get_live_match(puuid)
                 if live_match:
@@ -179,11 +173,8 @@ class LolMatchHistoryAPIView(APIView):
             else:
                 return Response({'error': 'Match1 not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            print(e)
             return Response({'error': 'User not found'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-
-
 
 class LiveMatchApiView(APIView):
     def get(self, request):
@@ -199,3 +190,22 @@ class LiveMatchApiView(APIView):
 
 
 
+class TwitchStreamerOnlineAPIView(APIView):
+    def get(self, request):
+        try:
+            famousPlayers = PlayersOnline.objects.all()
+            responseData = []
+            for player in famousPlayers:
+                responseData.append({
+                    'name': player.famousTwitchPlayersLol.name,
+                    'rank': player.rank,
+                    'tier': player.tier,
+                    'pdl': player.pdl,
+                    'thumbUrl': player.thumbUrl,
+                    'started_at': player.started_at,
+                    'region': player.famousTwitchPlayersLol.region,
+                    'twitch_channel_id': "http://twitch.tv/" + player.famousTwitchPlayersLol.channelId,
+                })
+            return Response(responseData, status=status.HTTP_200_OK)
+        except:
+            return Response({'error': 'Server Error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
