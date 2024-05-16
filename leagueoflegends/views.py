@@ -13,7 +13,7 @@ from .utils import get_user_tft_rank_stats
 from .utils import map_response_match_history
 from .utils import map_response_live_match
 from .utils import get_match_history_api
-from leagueoflegends.models import FamousTwitchPlayersLol, PlayersOnline
+from leagueoflegends.models import StreamerTwitchPlayersLol
 from .utils import RIOT_API_BR_REGION
 import os
 
@@ -193,18 +193,23 @@ class LiveMatchApiView(APIView):
 class TwitchStreamerOnlineAPIView(APIView):
     def get(self, request):
         try:
-            famousPlayers = PlayersOnline.objects.all()
+            streamers_list = StreamerTwitchPlayersLol.objects.all()
             responseData = []
-            for player in famousPlayers:
+            for player in streamers_list:
                 responseData.append({
-                    'name': player.famousTwitchPlayersLol.name,
+                    'name': player.name,
                     'rank': player.rank,
                     'tier': player.tier,
                     'pdl': player.pdl,
                     'thumbUrl': player.thumbUrl,
                     'started_at': player.started_at,
-                    'region': player.famousTwitchPlayersLol.region,
-                    'twitch_channel_id': "http://twitch.tv/" + player.famousTwitchPlayersLol.channelId,
+                    'region': player.region,
+                    'isOnline': player.isOnline,	
+                    'isPlaying': player.isPlaying,
+                    'channelId': player.channelId,
+                    'gameNickName': player.gameNickName,
+                    'gameTag': player.gameTag,
+                    'puuid': player.puuid,
                 })
             return Response(responseData, status=status.HTTP_200_OK)
         except:

@@ -34,5 +34,4 @@ urlpatterns = [
     path('api/get_wallet/', WalletAPIView.as_view(), name='get_wallet'),
     path('api/get_bet_history/', BetHistoryApiView.as_view(), name='get_bet_history'),
     path('api/check_streamer_online/', TwitchStreamerOnlineAPIView.as_view(), name='check_streamer_online'),
-    
 ]

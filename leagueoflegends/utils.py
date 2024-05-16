@@ -1,6 +1,5 @@
 import requests
 from django.conf import settings
-from .models import PlayersOnline
 from datetime import datetime
 
 RIOT_API_KEY = settings.RIOT_API_KEY
@@ -29,16 +28,30 @@ def get_user_by_summoner_name_tagline(summoner_name, tag):
     
     return None
 
+def get_account_user_by_puuid(puuid):
+    endpoint = f'{RIOT_API_AMERICAS_URL}riot/account/v1/accounts/by-puuid/{puuid}'
+    headers = {'X-Riot-Token': RIOT_API_KEY}
+    response = requests.get(endpoint, headers=headers)
+
+    if response.status_code == 200:
+        userLolAccount = response.json()
+        return userLolAccount
+    
+    return None
+
 def get_user_by_puuid(puuid):
     endpoint = f'{RIOT_API_BR_URL}/summoner/v4/summoners/by-puuid/{puuid}'
     headers = {'X-Riot-Token': RIOT_API_KEY}
     response = requests.get(endpoint, headers=headers)
+
     if response.status_code == 200:
         userProfile = response.json()
         return userProfile
     
     return None
 
+
+#TO DO: Passar TFT para um módulo Novo
 def get_user_tft_rank_stats(account_id):
     endpoint = f'{RIOT_API_BR_TFT_URL}/league/v1/entries/by-summoner/{account_id}'
     headers = {'X-Riot-Token': RIOT_API_KEY}
@@ -52,8 +65,10 @@ def get_user_tft_rank_stats(account_id):
 
 def get_user__summoners_rift_rank_stats(account_id):
     endpoint = f'{RIOT_API_BR_URL}/league/v4/entries/by-summoner/{account_id}'
+    print(endpoint)
     headers = {'X-Riot-Token': RIOT_API_KEY}
     response = requests.get(endpoint, headers=headers)
+    print(response)
 
     if response.status_code == 200:
         userStatsData = response.json()
@@ -173,17 +188,17 @@ def get_streamer_details(channel_id):
     
     return None
 
-def insert_player_online(famous_twitch_player_id, rank, tier, pdl, thumb_url, started_at):
-    player_online, created = PlayersOnline.objects.get_or_create(
-    famousTwitchPlayersLol_id=famous_twitch_player_id,
-    defaults={
-        'rank': rank,
-        'tier': tier,
-        'pdl': pdl,
-        'thumbUrl': thumb_url,
-        'started_at': started_at
-    }
-)
+#def insert_player_online(famous_twitch_player_id, rank, tier, pdl, thumb_url, started_at):
+#    player_online, created = PlayersOnline.objects.get_or_create(
+#    famousTwitchPlayersLol_id=famous_twitch_player_id,
+#    defaults={
+#        'rank': rank,
+#        'tier': tier,
+#        'pdl': pdl,
+#        'thumbUrl': thumb_url,
+#        'started_at': started_at
+#    }
+#)
 
 ################ RESPONSE MAPS & UTILS ##############################
 

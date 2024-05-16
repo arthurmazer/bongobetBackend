@@ -1,7 +1,6 @@
 from django.contrib import admin
-from .models import FamousTwitchPlayersLol, PlayersOnline
+from .models import StreamerTwitchPlayersLol
 
 
 # Register your models here.
-admin.site.register(FamousTwitchPlayersLol)
-admin.site.register(PlayersOnline)
+admin.site.register(StreamerTwitchPlayersLol)
